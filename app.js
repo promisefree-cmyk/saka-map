@@ -3,7 +3,7 @@
 const GSI = 'https://cyberjapandata.gsi.go.jp/xyz';
 const WALK_M_PER_MIN = 80;        // 不動産の表示に関する公正競争規約：徒歩1分=80m
 const SAMPLE_STEP = 10;           // 標高を取る間隔（m）
-const EXAMPLE = { addr: '東京都港区元麻布3丁目', station: '麻布十番' };
+const EXAMPLE = { addr: '東京都港区元麻布3丁目', station: '' };
 
 const $ = (id) => document.getElementById(id);
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -163,15 +163,50 @@ async function geocodeStation(name, near) {
   return best;
 }
 
-async function nearestStation(near) {
-  const query = `[out:json][timeout:20];(node["railway"="station"](around:2000,${near.lat},${near.lon});node["railway"="halt"](around:2000,${near.lat},${near.lon}););out body;`;
-  const data = await getJSON('https://overpass-api.de/api/interpreter', { method: 'POST', body: new URLSearchParams({ data: query }) });
-  const st = data.elements
-    .filter((e) => e.tags && e.tags.name && e.tags.station !== 'subway_entrance')
-    .map((e) => ({ lat: e.lat, lon: e.lon, label: e.tags.name.endsWith('駅') ? e.tags.name : `${e.tags.name}駅` }))
-    .sort((a, b) => dist([a.lat, a.lon], [near.lat, near.lon]) - dist([b.lat, b.lon], [near.lat, near.lon]));
-  if (!st.length) throw new UserError('2km以内に駅が見つかりませんでした。駅名を入力してください。');
-  return st[0];
+// JSONP（CORS非対応のAPI用）
+function jsonp(url, timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    const cb = `__jsonp${Date.now()}${Math.floor(Math.random() * 1e6)}`;
+    const el = document.createElement('script');
+    const done = () => { clearTimeout(timer); delete window[cb]; el.remove(); };
+    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, timeout);
+    window[cb] = (data) => { done(); resolve(data); };
+    el.onerror = () => { done(); reject(new Error('jsonp')); };
+    el.src = `${url}&jsonp=${cb}`;
+    document.head.appendChild(el);
+  });
+}
+
+const stationKey = (label) => label.replace(/駅$/, '').trim();
+
+// 物件の近くの駅を、近い順に最大6駅（同じ名前の駅は路線をまとめる）
+async function nearbyStations(near) {
+  const byName = new Map();
+  const add = (name, lat, lon, line) => {
+    const key = stationKey(name);
+    const e = byName.get(key) || { lat, lon, label: `${key}駅`, lines: [] };
+    if (line && !e.lines.includes(line)) e.lines.push(line);
+    byName.set(key, e);
+  };
+  try {
+    const d = await jsonp(`https://express.heartrails.com/api/json?method=getStations&x=${near.lon}&y=${near.lat}`);
+    for (const st of (d.response && d.response.station) || []) add(st.name, +st.y, +st.x, st.line);
+  } catch { /* 下の OpenStreetMap へ */ }
+  if (byName.size < 2) {
+    const query = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:2000,${near.lat},${near.lon}););out body;`;
+    for (const host of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']) {
+      try {
+        const data = await getJSON(`${host}?data=${encodeURIComponent(query)}`);
+        for (const e of data.elements) if (e.tags && e.tags.name) add(e.tags.name, e.lat, e.lon, e.tags.operator);
+        break;
+      } catch { /* 次のサーバーへ */ }
+    }
+  }
+  return [...byName.values()]
+    .map((s) => ({ ...s, dist: dist([s.lat, s.lon], [near.lat, near.lon]) }))
+    .filter((s) => s.dist <= 3000)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 6);
 }
 
 // 徒歩ルート（OSRM foot）。失敗したら直線で代用
@@ -219,6 +254,12 @@ function smooth(arr, half) {
   });
 }
 
+const LEVELS = [
+  { word: 'ほぼ平ら', badge: 'ラク', feel: 'ほぼ平らで、自転車でもラクな道です。' },
+  { word: 'ゆるい坂', badge: 'ややラク', feel: 'ゆるい坂があります。自転車でもこいで登れる程度です。' },
+  { word: '坂', badge: '坂あり', feel: 'はっきりした坂があります。自転車だと立ちこぎか、押して歩きたくなる程度です。' },
+  { word: '急な坂', badge: 'きつい', feel: '急な坂があります。歩いても息が上がり、自転車は押して歩くことになりそうです。' },
+];
 const gradeClass = (g) => { const a = Math.abs(g); return a < 3 ? 0 : a < 6 ? 1 : a < 10 ? 2 : 3; };
 const tobler = (g) => 6 * Math.exp(-3.5 * Math.abs(g / 100 + 0.05)); // km/h
 
@@ -331,21 +372,28 @@ function render() {
   const fmt = (v, k = 0) => (Number.isFinite(v) ? v.toFixed(k) : '-');
   $('fromLabel').textContent = dirToHome ? state.sta.label : '物件';
   $('toLabel').textContent = dirToHome ? '物件' : state.sta.label;
+  renderStations();
   $('sDist').textContent = Math.round(p.total).toLocaleString();
   $('sMin').textContent = Math.max(1, Math.ceil(p.total / WALK_M_PER_MIN));
   $('sMinSlope').textContent = Math.max(1, Math.round(p.slopeMin));
   $('sClimb').textContent = fmt(p.climb);
-  $('sGrade').textContent = fmt(Math.max(0, p.maxGrade), 1);
-  $('sSteep').textContent = Math.round(p.steepUp / 10) * 10;
+    $('sSteep').textContent = Math.round(p.steepUp / 10) * 10;
   $('eHome').textContent = fmt(state.toSta.h[0], 1);
   $('eSta').textContent = fmt(state.toHome.h[0], 1);
 
   const other = dirToHome ? state.toSta : state.toHome;
-  const word = ['ほぼ平らな道', 'ゆるい坂がある道', 'はっきりした坂がある道', '急な坂がある道'][gradeClass(p.maxGrade)];
-  $('verdict').textContent = `${dirToHome ? '帰り道' : '行き道'}は${word}です。合計${fmt(p.climb)}m登ります`
-    + `（${dirToHome ? '行き道' : '帰り道'}は${fmt(other.climb)}m）。`
-    + (p.climb >= 3 ? `ビルの${Math.max(1, Math.round(p.climb / 3))}階分くらいの高さです。` : '')
-    + (state.approx ? ' ※徒歩ルートが取れなかったため直線で計算しています。' : '');
+  const lv = gradeClass(p.maxGrade);
+  const floors = Math.round(p.climb / 3);
+  $('sFloors').textContent = floors >= 1 ? `ビル${floors}階分` : '登りはほぼなし';
+  $('sGradeWord').textContent = LEVELS[lv].word;
+  $('sGrade').textContent = `100mで${fmt(Math.max(0, p.maxGrade), 1)}m上がる`;
+  $('levelBadge').textContent = LEVELS[lv].badge;
+  $('levelBadge').className = `badge lv${lv}`;
+  const way = dirToHome ? '帰り道' : '行き道';
+  $('verdict').textContent = `${way}は${LEVELS[lv].feel}`
+    + (floors >= 1 ? `途中で登る高さは合わせてビル${floors}階分（${fmt(p.climb)}m）です。` : '登りはほとんどありません。')
+    + `逆向きの${dirToHome ? '行き道' : '帰り道'}は${fmt(other.climb)}m登ります。`
+    + (state.approx ? ' ※徒歩ルートが取れなかったため、まっすぐ歩いたとして計算しています。' : '');
 
   $('dirHome').classList.toggle('on', dirToHome); $('dirHome').setAttribute('aria-pressed', dirToHome);
   $('dirStation').classList.toggle('on', !dirToHome); $('dirStation').setAttribute('aria-pressed', !dirToHome);
@@ -445,19 +493,69 @@ async function recompute(home, sta) {
   }
 }
 
+let candidates = [];
+
+function renderStations() {
+  const box = $('stationList');
+  box.textContent = '';
+  $('stationPick').hidden = candidates.length < 2;
+  for (const c of candidates) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (state && stationKey(state.sta.label) === stationKey(c.label) ? ' on' : '');
+    const name = document.createElement('b'); name.textContent = c.label;
+    const info = document.createElement('small');
+    info.textContent = [c.lines.slice(0, 3).join('・'), Number.isFinite(c.dist) ? `直線${Math.round(c.dist / 10) * 10}m` : ''].filter(Boolean).join(' ／ ');
+    b.append(name, info);
+    b.addEventListener('click', () => pickStation(c));
+    box.append(b);
+  }
+}
+
+async function pickStation(c) {
+  if (!state || stationKey(state.sta.label) === stationKey(c.label)) return;
+  showMessage('');
+  $('station').value = stationKey(c.label);
+  try {
+    await recompute(state.home, c);
+    updateUrl($('addr').value.trim(), stationKey(c.label));
+  } catch (e) {
+    console.error(e);
+    showMessage('データの取得に失敗しました。通信状況を確認して、もう一度お試しください。');
+  }
+}
+
+function updateUrl(addr, st) {
+  const u = new URL(location.href);
+  u.searchParams.set('addr', addr);
+  if (st) u.searchParams.set('st', st); else u.searchParams.delete('st');
+  history.replaceState(null, '', u);
+}
+
 async function search(addr, stationName) {
   showMessage('');
   setBusy(true);
   try {
+    const typed = stationName.trim();
     const home = await geocodeAddress(addr);
     home.label = addr;
-    const sta = stationName.trim() ? await geocodeStation(stationName.trim(), home) : await nearestStation(home);
-    if (!stationName.trim()) $('station').value = sta.label.replace(/駅$/, '');
+    candidates = await nearbyStations(home).catch(() => []);
+    let sta;
+    if (typed) {
+      sta = candidates.find((c) => stationKey(c.label) === stationKey(typed));
+      if (!sta) {
+        sta = { lines: [], ...(await geocodeStation(typed, home)) };
+        sta.dist = dist([sta.lat, sta.lon], [home.lat, home.lon]);
+        candidates = [sta, ...candidates.filter((c) => stationKey(c.label) !== stationKey(sta.label))].slice(0, 6);
+      }
+    } else {
+      if (!candidates.length) throw new UserError('近くの駅が見つかりませんでした。最寄り駅の名前を入れてください。');
+      sta = candidates[0];
+      $('station').value = stationKey(sta.label);
+    }
     await recompute(home, sta);
-    const u = new URL(location.href);
-    u.searchParams.set('addr', addr);
-    if (stationName.trim()) u.searchParams.set('st', stationName.trim()); else u.searchParams.delete('st');
-    history.replaceState(null, '', u);
+    updateUrl(addr, typed);
+    if (!typed && candidates.length > 1) showMessage(`一番近い${sta.label}で計算しました。ほかの駅は下の一覧から選べます。`, true);
   } catch (e) {
     console.error(e);
     showMessage(e instanceof UserError ? e.message : 'データの取得に失敗しました。通信状況を確認して、もう一度お試しください。');
@@ -482,9 +580,8 @@ $('dirStation').addEventListener('click', () => { if (state) { dirToHome = false
     search(addr, st || '');
   } else {
     $('addr').value = EXAMPLE.addr; $('station').value = EXAMPLE.station;
-    showMessage('例として元麻布の物件を表示しています。住所と駅を入れ替えて試してください。', true);
     search(EXAMPLE.addr, EXAMPLE.station).then(() => {
-      if (state) showMessage('例として元麻布の物件を表示しています。住所と駅を入れ替えて試してください。', true);
+      if (state) showMessage('例として元麻布の物件を表示しています。調べたい物件の住所を入れてください。', true);
     });
   }
 })();

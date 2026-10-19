@@ -16,13 +16,13 @@
   <aside class="panel">
     <header class="brand">
       <h1>駅から坂道マップ</h1>
-      <p class="lede">物件の住所と最寄り駅を入れると、歩く道のりの高低差がわかります。</p>
+      <p class="lede">住所を入れるだけで、駅から家まで歩くときにどれくらい坂を登るのかが分かります。</p>
     </header>
 
     <form id="search" class="search" autocomplete="off">
       <label for="addr">物件の住所</label>
       <input id="addr" name="addr" type="text" required placeholder="例：東京都港区元麻布3丁目">
-      <label for="station">最寄り駅 <span class="hint">空欄なら近くの駅を自動で探します</span></label>
+      <label for="station">最寄り駅 <span class="hint">空欄でOK。近くの駅を探して選べます</span></label>
       <input id="station" name="station" type="text" placeholder="例：麻布十番">
       <button id="go" type="submit">坂を調べる</button>
     </form>
@@ -30,6 +30,11 @@
     <p id="message" class="message" role="status" hidden></p>
 
     <section id="result" class="result" hidden>
+      <div id="stationPick" class="station-pick" hidden>
+        <p class="pick-title">近くの駅（押すと切り替わります）</p>
+        <div id="stationList" class="chips"></div>
+      </div>
+
       <div class="route-name">
         <span id="fromLabel"></span>
         <span class="arrow" aria-hidden="true">→</span>
@@ -37,41 +42,53 @@
       </div>
 
       <div class="dir" role="group" aria-label="歩く向き">
-        <button type="button" id="dirHome" class="on" aria-pressed="true">駅 → 家（帰り道）</button>
-        <button type="button" id="dirStation" aria-pressed="false">家 → 駅（行き道）</button>
+        <button type="button" id="dirHome" class="on" aria-pressed="true">駅から家へ（帰り道）</button>
+        <button type="button" id="dirStation" aria-pressed="false">家から駅へ（行き道）</button>
+      </div>
+
+      <div class="summary">
+        <span id="levelBadge" class="badge lv0">-</span>
+        <p id="verdict" class="verdict"></p>
       </div>
 
       <dl class="stats">
-        <div><dt>道のり</dt><dd><b id="sDist">-</b><small>m</small></dd></div>
-        <div><dt>徒歩<span class="tip">80m/分の不動産表記</span></dt><dd><b id="sMin">-</b><small>分</small></dd></div>
-        <div><dt>坂を考えた目安</dt><dd><b id="sMinSlope">-</b><small>分</small></dd></div>
-        <div><dt>登りの合計</dt><dd><b id="sClimb">-</b><small>m</small></dd></div>
-        <div><dt>最大勾配</dt><dd><b id="sGrade">-</b><small>%</small></dd></div>
-        <div><dt>急な登り<span class="tip">勾配5%以上の区間</span></dt><dd><b id="sSteep">-</b><small>m</small></dd></div>
+        <div><dt>歩く距離</dt><dd><b id="sDist">-</b><small>m</small></dd></div>
+        <div><dt>徒歩<span class="tip">不動産広告の表示</span></dt><dd><b id="sMin">-</b><small>分</small></dd></div>
+        <div><dt>実際の目安<span class="tip">坂で遅くなる分を足した時間</span></dt><dd><b id="sMinSlope">-</b><small>分</small></dd></div>
+        <div><dt>登る高さ</dt><dd><b id="sClimb">-</b><small>m</small></dd><span class="sub" id="sFloors"></span></div>
+        <div><dt>一番きつい坂</dt><dd><b id="sGradeWord" class="word">-</b></dd><span class="sub" id="sGrade"></span></div>
+        <div><dt>きつい登り<span class="tip">自転車がつらくなる坂</span></dt><dd><b id="sSteep">-</b><small>m</small></dd></div>
       </dl>
-
-      <p id="verdict" class="verdict"></p>
 
       <div class="chart-wrap">
         <div class="chart-head">
           <h2>高低差グラフ</h2>
           <ul class="legend">
-            <li><i class="g0"></i>平ら 〜3%</li>
-            <li><i class="g1"></i>ゆるい坂 〜6%</li>
-            <li><i class="g2"></i>坂 〜10%</li>
-            <li><i class="g3"></i>急坂 10%〜</li>
+            <li><i class="g0"></i>ほぼ平ら</li>
+            <li><i class="g1"></i>ゆるい坂</li>
+            <li><i class="g2"></i>坂</li>
+            <li><i class="g3"></i>急な坂</li>
           </ul>
         </div>
         <div class="chart-box"><canvas id="profile" aria-label="高低差グラフ"></canvas></div>
-        <p class="elev-line">家 <b id="eHome">-</b>m ／ 駅 <b id="eSta">-</b>m（標高）</p>
+        <p class="elev-line">海からの高さ：家 <b id="eHome">-</b>m ／ 駅 <b id="eSta">-</b>m　グラフをなぞると地図に場所が出ます</p>
       </div>
 
+      <details class="howto">
+        <summary>数字の見方</summary>
+        <ul>
+          <li><b>坂のきつさ</b>は「100m進むあいだに何m上がるか」（勾配）で分けています。ほぼ平ら＝3m未満、ゆるい坂＝3〜6m、坂＝6〜10m、急な坂＝10m以上。</li>
+          <li><b>ゆるい坂</b>は自転車でもこいで登れる程度、<b>坂</b>は立ちこぎや押して歩きたくなる程度、<b>急な坂</b>は歩いても息が上がる程度が目安です。</li>
+          <li><b>徒歩（不動産広告の表示）</b>は80mを1分として計算し、端数は切り上げています。<b>実際の目安</b>は、登り坂で歩くのが遅くなる分を足した時間です。</li>
+          <li><b>登る高さ</b>は途中の登りを全部足した高さです。ビル1階分を約3mとして換算しています。</li>
+        </ul>
+      </details>
       <p class="links"><a id="gsiLink" href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">地理院地図で見る</a></p>
     </section>
 
     <footer class="notes">
-      <p>標高は国土地理院の数値標高モデル（5m/10mメッシュ）から求めています。歩道橋やトンネル、階段は地面の高さで計算されるため、実際とずれることがあります。徒歩分は不動産広告と同じ80m/分・端数切り上げです。</p>
-      <p>出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>（地図・標高・住所検索）／ 徒歩ルート：<a href="https://routing.openstreetmap.de/" target="_blank" rel="noopener">FOSSGIS OSRM</a>、駅検索：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></p>
+      <p>標高は国土地理院の数値標高モデル（5m/10mメッシュ）から求めています。歩道橋やトンネル、階段は地面の高さで計算されるため、実際とずれることがあります。</p>
+      <p>出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>（地図・標高・住所検索）／ 徒歩ルート：<a href="https://routing.openstreetmap.de/" target="_blank" rel="noopener">FOSSGIS OSRM</a>、駅検索：<a href="https://express.heartrails.com/" target="_blank" rel="noopener">HeartRails Express</a>、<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></p>
     </footer>
   </aside>
 
