@@ -1,0 +1,33 @@
+{
+  "_説明": "物件をしぼる条件です。「物件の条件えらび」ページで決めた内容を tools/apply-conditions.cjs で書き込みます。",
+  "stations": ["八丁堀", "茅場町", "人形町", "新富町", "宝町"],
+  "rentMax": 150000,
+  "rentSlack": 5000,
+  "walkMax": 5,
+  "walkSlack": 2,
+  "climbMax": 3,
+  "areaMin": 40,
+  "areaSlack": 5,
+  "layouts": ["1LDK", "1SLDK", "2DK", "2LDK"],
+  "builtWithin": null,
+  "floorMin": 3,
+  "features": {
+    "balcony": "must", "twoPeople": "must", "sunny": "high", "corner": "high", "windows2": "high", "south": "nice", "east": "nice",
+    "living12": "high", "riverside": "nice", "walk3": "high", "area45": "nice", "bathToilet": "off", "washstand": "off", "laundry": "off",
+    "bathDryer": "off", "stove2": "off", "elevator": "off", "autolock": "off", "delivery": "off", "bike": "off", "internet": "off", "rc": "off",
+    "notFirst": "off", "soho": "off", "pet": "off"
+  },
+  "memo": "",
+  "watchBuildings": [
+    { "name": "東急ドエルグラフィオ八丁堀", "keys": ["グラフィオ八丁堀", "ドエルグラフィオ"], "address": "東京都中央区八丁堀", "station": "八丁堀", "on": true },
+    { "name": "ジュイール東京八丁堀", "keys": ["ジュイール東京八丁堀", "ジュイール"], "address": "東京都中央区八丁堀", "station": "八丁堀", "on": true },
+    { "name": "ニューハイツ八丁堀", "keys": ["ニューハイツ八丁堀"], "address": "東京都中央区八丁堀", "station": "八丁堀", "on": true },
+    { "name": "ライオンズマンション八丁堀第2", "keys": ["ライオンズマンション八丁堀第2", "ライオンズマンション八丁堀第二"], "address": "東京都中央区八丁堀", "station": "八丁堀", "on": true }
+  ],
+  "watchBonus": 10,
+  "stationCoords": {
+    "八丁堀": [35.6749, 139.7774], "茅場町": [35.6797, 139.7799], "人形町": [35.6862, 139.7823], "新富町": [35.6706, 139.7731],
+    "宝町": [35.6752, 139.7715], "水天宮前": [35.6829, 139.7852], "築地": [35.6681, 139.7718], "東銀座": [35.6695, 139.7672],
+    "京橋": [35.6767, 139.7701], "小伝馬町": [35.6909, 139.7782], "月島": [35.6646, 139.7843], "門前仲町": [35.6716, 139.7963]
+  }
+}
