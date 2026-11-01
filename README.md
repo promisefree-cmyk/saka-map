@@ -20,3 +20,11 @@
 ## 出典
 地図・標高・住所検索：国土地理院 ／ 徒歩ルート：FOSSGIS OSRM ／ 駅検索：© OpenStreetMap contributors
 ライブラリ：Leaflet, Chart.js, d3-contour（`vendor/` に同梱）
+
+## おすすめ物件（自動ピックアップ）
+`picks/` は、物件サイトの新着お知らせメールから条件に合う部屋を拾って点数順に並べるページです（公開URL：`/picks/`）。
+- 条件：`picks/criteria.json`（必須条件・加点条件・気になる建物）
+- 物件データ：`picks/listings.json`（毎朝の自動作業が追記）
+- 点数のつけ方：`picks/score.js`（ページと追記スクリプトで共通）
+- 追記スクリプト：`node tools/add-listings.cjs new.json`
+- 毎朝の自動作業の手順：`picks/ROUTINE.md`

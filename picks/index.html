@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>おすすめ物件</title>
+<meta name="description" content="新着物件メールから、譲れない条件に合う賃貸物件を自動で拾って点数順に並べます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Kaku+Gothic+Antique:wght@700;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="../vendor/leaflet.css">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="picks.css">
+</head>
+<body>
+<div class="picks">
+  <section class="list-col">
+    <header class="brand">
+      <h1>おすすめ物件</h1>
+      <p class="lede">物件サイトの新着メールを毎朝読んで、条件に合う部屋だけを点数順に並べています。</p>
+      <p class="meta"><span id="updated"></span> ・ <a href="../">坂道マップへ</a></p>
+    </header>
+
+    <details class="criteria" id="criteria">
+      <summary>いまの条件</summary>
+      <div id="criteriaBody"></div>
+    </details>
+
+    <div class="filters" role="group" aria-label="表示する物件">
+      <button type="button" class="chip on" data-f="good">ぴったり＋おしい</button>
+      <button type="button" class="chip" data-f="all">条件外もすべて</button>
+      <button type="button" class="chip" data-f="skipped">見送りにした物件</button>
+    </div>
+
+    <p id="empty" class="empty" hidden></p>
+    <ol id="cards" class="cards"></ol>
+
+    <section class="watch">
+      <h2>気になる建物</h2>
+      <p class="sub">この建物の部屋がメールに出たら、点数をおまけして一番上に出します。</p>
+      <ul id="watchList"></ul>
+    </section>
+
+    <footer class="notes">
+      <p>徒歩分は広告の表示（1分=80m）です。高低差は国土地理院の標高データから、住所の代表地点と駅のあいだを比べた目安です。坂の詳しい様子は「坂道を見る」で確認できます。</p>
+      <p>物件の情報は各サイトからのメールをもとにしています。空室かどうかは必ず元のページで確認してください。</p>
+    </footer>
+  </section>
+  <section class="map-col"><div id="map" aria-label="物件の地図"></div></section>
+</div>
+<script src="../vendor/leaflet.js"></script>
+<script src="score.js"></script>
+<script src="picks.js"></script>
+</body>
+</html>

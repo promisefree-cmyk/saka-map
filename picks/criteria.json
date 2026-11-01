@@ -1,0 +1,43 @@
+{
+  "_説明": "物件をしぼる条件です。数字を書きかえると、一覧ページの点数もすぐ変わります。",
+  "area": "八丁堀駅のまわり（茅場町・人形町・新富町・宝町も可）",
+  "stations": {
+    "八丁堀": [35.6749, 139.7774],
+    "茅場町": [35.6797, 139.7799],
+    "人形町": [35.6862, 139.7823],
+    "新富町": [35.6706, 139.7731],
+    "宝町": [35.6752, 139.7715],
+    "水天宮前": [35.6829, 139.7852]
+  },
+  "must": {
+    "rentMax": 150000,
+    "rentMaxRelaxed": 155000,
+    "walkMax": 5,
+    "walkMaxRelaxed": 7,
+    "areaMin": 40,
+    "areaMinRelaxed": 35,
+    "layouts": ["1LDK", "2DK", "2LDK", "1SLDK"],
+    "balcony": true,
+    "twoPeople": true,
+    "climbMax": 3
+  },
+  "nice": [
+    { "key": "walk3",     "label": "駅まで3分以内",           "points": 15 },
+    { "key": "corner",    "label": "角部屋",                  "points": 12 },
+    { "key": "windows2",  "label": "窓が2方向以上（風通し）",   "points": 12 },
+    { "key": "southEast", "label": "南か東向き",               "points": 12 },
+    { "key": "sunny",     "label": "日当たり良好",             "points": 10 },
+    { "key": "living12",  "label": "リビング12畳以上",          "points": 10 },
+    { "key": "riverside", "label": "川沿い・空が開けている",     "points": 10 },
+    { "key": "floor3",    "label": "3階以上",                 "points": 8 },
+    { "key": "area45",    "label": "45㎡以上",                "points": 6 },
+    { "key": "age35",     "label": "築35年以内",               "points": 5 }
+  ],
+  "watchBuildings": [
+    { "name": "東急ドエルグラフィオ八丁堀", "keys": ["グラフィオ八丁堀", "ドエルグラフィオ"], "address": "東京都中央区八丁堀", "station": "八丁堀" },
+    { "name": "ジュイール東京八丁堀", "keys": ["ジュイール東京八丁堀", "ジュイール"], "address": "東京都中央区八丁堀", "station": "八丁堀" },
+    { "name": "ニューハイツ八丁堀", "keys": ["ニューハイツ八丁堀"], "address": "東京都中央区八丁堀", "station": "八丁堀" },
+    { "name": "ライオンズマンション八丁堀第2", "keys": ["ライオンズマンション八丁堀第2", "ライオンズマンション八丁堀第二"], "address": "東京都中央区八丁堀", "station": "八丁堀" }
+  ],
+  "watchBonus": 10
+}
