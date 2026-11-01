@@ -5,6 +5,9 @@
 
 ## 1. 準備
 - リポジトリ `promisefree-cmyk/saka-map` の `main` ブランチを最新にする（`git fetch origin main && git checkout main && git pull origin main`）。
+- 条件を最新にする：`ArtifactData` で「物件の条件えらび」ページ（https://claude.ai/artifact/V4CFpKL1ugP16E2dLNy6w2）の
+  `criteria` コレクションの `current` を `get` し、中身を JSON ファイル（例：`/tmp/cond.json`）に保存して
+  `node tools/apply-conditions.cjs /tmp/cond.json` を実行する。読めなければこの手順は飛ばす（今の `picks/criteria.json` のまま進める）。
 - `picks/criteria.json` を読んで、いまの条件を確認する。
 
 ## 2. 新着メールを集める（Gmail）
@@ -46,6 +49,9 @@ newer_than:3d (from:suumo.jp OR from:homes.co.jp OR from:lifull.com OR from:atho
   "sunny": null,                  // 日当たり良好と書いてある
   "riverside": null,              // 川沿い・眺望良好・前に建物がないと書いてある
   "twoPeople": true,              // 二人入居可
+  "features": ["バス・トイレ別", "独立洗面台", "室内洗濯機置場", "浴室乾燥", "2口コンロ", "エレベーター",
+               "オートロック", "宅配ボックス", "インターネット無料", "駐輪場", "SOHO可", "ペット可", "鉄筋コンクリート"],
+                                  // 設備・条件の欄に書いてあるものだけ、この言い方にそろえて入れる
   "notes": "ペット可、角部屋の記載あり など、気になる点を一言",
   "mailDate": "2026-11-02",
   "mailUrl": "メールの viewUrl"
@@ -59,7 +65,7 @@ node tools/add-listings.cjs /tmp/new.json
 同じ物件は自動でまとめられ、最後に「今回新しく入った候補」が表示されます。
 
 ## 5. 保存して公開
-- 変更があれば `git add picks/listings.json` → `git commit -m "物件の自動更新 YYYY-MM-DD"` → `git push origin main`。
+- 変更があれば `git add picks/listings.json picks/criteria.json` → `git commit -m "物件の自動更新 YYYY-MM-DD"` → `git push origin main`。
   push すると GitHub Pages が更新され、 https://promisefree-cmyk.github.io/saka-map/picks/ に反映される。
 - 変更がなければ何もしない。
 

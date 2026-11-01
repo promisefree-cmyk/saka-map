@@ -81,21 +81,24 @@ function sakaUrl(addr, station) {
 }
 
 function renderCriteria() {
-  const m = criteria.must;
+  const c = criteria, f = c.features || {};
+  const by = (lv) => Score.FEATURES.filter((x) => f[x.key] === lv).map((x) => esc(x.label)).join('、') || 'なし';
   $('criteriaBody').innerHTML = `<ul>
-    <li><b>場所</b>：${esc(criteria.area)}</li>
-    <li><b>家賃</b>：管理費こみ ${man(m.rentMax)}円まで（${man(m.rentMaxRelaxed)}円までは「おしい」）</li>
-    <li><b>駅から</b>：徒歩${m.walkMax}分まで（${m.walkMaxRelaxed}分までは「おしい」）、高低差${m.climbMax}m以内</li>
-    <li><b>広さ</b>：${m.areaMin}㎡以上（${m.areaMinRelaxed}㎡までは「おしい」）、${esc(m.layouts.join('・'))}など2人で住める間取り</li>
-    <li><b>必須</b>：ベランダあり、2人入居OK</li>
-    <li><b>あると加点</b>：${criteria.nice.map((n) => esc(n.label)).join('、')}</li>
+    <li><b>駅</b>：${esc((c.stations || []).join('・'))}</li>
+    <li><b>家賃</b>：管理費こみ ${man(c.rentMax)}円まで${c.rentSlack ? `（+${man(c.rentSlack)}円までは「おしい」）` : ''}</li>
+    <li><b>駅から</b>：徒歩${c.walkMax}分まで${c.walkSlack ? `（+${c.walkSlack}分までは「おしい」）` : ''}${c.climbMax != null ? `、高低差${c.climbMax}m以内` : ''}</li>
+    <li><b>部屋</b>：${c.areaMin}㎡以上、${esc((c.layouts || []).join('・'))}${c.builtWithin != null ? `、築${c.builtWithin}年以内` : ''}${c.floorMin != null ? `、${c.floorMin}階以上` : ''}</li>
+    <li><b>必須</b>：${by('must')}</li>
+    <li><b>大事</b>：${by('high')}</li>
+    <li><b>あれば</b>：${by('nice')}</li>
+    ${c.memo ? `<li><b>メモ</b>：${esc(c.memo)}</li>` : ''}
   </ul>`;
 }
 
 function card(l, s, isNew) {
   const ex = extra.get(l.id) || {};
   const rent = Score.totalRent(l);
-  const checks = (arr, cls) => `<ul class="checks ${cls}">${arr.map((c) => `<li class="${c.state}">${esc(c.label)}${c.detail ? ` <small>${esc(c.detail)}</small>` : ''}</li>`).join('')}</ul>`;
+  const checks = (arr, cls) => `<ul class="checks ${cls}">${arr.map((c) => `<li class="${c.state}${c.high ? ' high' : ''}">${esc(c.label)}${c.detail ? ` <small>${esc(c.detail)}</small>` : ''}</li>`).join('')}</ul>`;
   const li = document.createElement('li');
   li.className = `card${skipped.has(l.id) ? ' skipped' : ''}`;
   li.id = `c-${l.id}`;
@@ -164,7 +167,7 @@ function render() {
       });
     m.addTo(pinLayer); markers.set(l.id, m);
   });
-  Object.entries(criteria.stations).forEach(([name, pos]) => {
+  Object.entries(criteria.stationCoords).filter(([n]) => (criteria.stations || []).includes(n)).forEach(([name, pos]) => {
     L.marker(pos, { icon: L.divIcon({ className: '', html: '<div class="spin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }) })
       .bindTooltip(`${esc(name)}駅`, { direction: 'top', offset: [0, -6] }).addTo(pinLayer);
   });
@@ -172,13 +175,13 @@ function render() {
 }
 
 function renderWatch() {
-  $('watchList').innerHTML = criteria.watchBuildings.map((w) =>
+  $('watchList').innerHTML = criteria.watchBuildings.filter((w) => w.on !== false).map((w) =>
     `<li>${esc(w.name)}<a href="${esc(sakaUrl(w.address, w.station))}" target="_blank" rel="noopener">坂道を見る</a></li>`).join('');
 }
 
 // 住所→位置→標高を順に調べて、分かったら描き直す
 async function enrich() {
-  const st = criteria.stations;
+  const st = criteria.stationCoords;
   const stElev = new Map();
   for (const l of listings) {
     const pos = await geocode(l.address);

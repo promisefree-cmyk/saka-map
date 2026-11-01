@@ -1,0 +1,267 @@
+<title>物件の条件えらび</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Kaku+Gothic+Antique:wght@700;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 1カラムの「条件シート」。上から順にボタンで選び、下に固定のまとめバー。 */
+:root {
+  --paper: #f3f4ee; --card: #ffffff; --ink: #1d2721; --muted: #5d6a62; --line: #d6dacd;
+  --accent: #23614c; --accent-ink: #ffffff; --must: #b8323d; --high: #c9861b; --nice: #2f7d61; --on-sem: #ffffff;
+  --f-display: "Zen Kaku Gothic Antique", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #141a17; --card: #1c2420; --ink: #e8ebe4; --muted: #9eaaa2; --line: #313b36;
+  --accent: #7cc7a8; --accent-ink: #10201a; --must: #ef7b84; --high: #e7b155; --nice: #7cc7a8; --on-sem: #13201a; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #141a17; --card: #1c2420; --ink: #e8ebe4; --muted: #9eaaa2; --line: #313b36;
+  --accent: #7cc7a8; --accent-ink: #10201a; --must: #ef7b84; --high: #e7b155; --nice: #7cc7a8; --on-sem: #13201a; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.6 var(--f-body); }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 24px 120px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; }
+h1 { font: 900 1.7rem/1.25 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
+.status { font-size: .8rem; color: var(--muted); margin: 6px 0 0; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+h2 { font: 700 1.05rem/1.3 var(--f-display); margin: 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+h2 small { font: 400 .78rem var(--f-body); color: var(--muted); }
+.q { display: grid; gap: 6px; }
+.q > span { font-weight: 700; font-size: .88rem; }
+.q > span em { font-style: normal; font-weight: 400; color: var(--muted); font-size: .76rem; margin-left: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 .88rem var(--f-body); color: var(--ink); background: transparent; border: 1px solid var(--line);
+  border-radius: 999px; padding: 7px 13px; cursor: pointer; min-height: 38px; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.chip:focus-visible, .seg button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .76rem; color: var(--muted); margin: 0; }
+.legend b { font-weight: 700; }
+.legend .m { color: var(--must); } .legend .h { color: var(--high); } .legend .n { color: var(--nice); }
+.feats { display: grid; gap: 0; }
+.feat { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
+.feat:first-child { border-top: 0; }
+.feat .name { font-size: .92rem; min-width: 0; }
+.feat .name small { display: block; color: var(--muted); font-size: .72rem; }
+.seg { display: grid; grid-template-columns: repeat(4, auto); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: 500 .78rem var(--f-body); border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); padding: 7px 9px; cursor: pointer; min-height: 36px; }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"][data-v="must"] { background: var(--must); color: var(--on-sem); font-weight: 700; }
+.seg button[aria-pressed="true"][data-v="high"] { background: var(--high); color: #1d2721; font-weight: 700; }
+.seg button[aria-pressed="true"][data-v="nice"] { background: var(--nice); color: var(--on-sem); font-weight: 700; }
+.seg button[aria-pressed="true"][data-v="off"] { background: var(--paper); color: var(--ink); font-weight: 700; }
+.group-title { font-size: .76rem; color: var(--muted); letter-spacing: .06em; margin: 10px 0 0; }
+
+textarea { width: 100%; min-height: 90px; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+  padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar-in { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.sum { font-size: .82rem; min-width: 0; }
+.sum b { font-family: var(--f-num); }
+.btn { font: 700 .92rem var(--f-body); border: 0; border-radius: 8px; padding: 10px 16px; background: var(--ink); color: var(--paper); cursor: pointer; }
+.btn[disabled] { opacity: .5; cursor: default; }
+.saved { color: var(--accent); font-weight: 700; }
+@media (max-width: 520px) {
+  .feat { grid-template-columns: 1fr; gap: 4px; }
+  .seg { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>物件の条件えらび</h1>
+    <p class="lede">ボタンを押して条件を決めてください。ここで決めた条件で、毎朝の新着物件に点数をつけます。押すたびに自動で保存されます。</p>
+    <p class="status" id="status">読み込み中…</p>
+  </header>
+
+  <section>
+    <h2>場所 <small>使う駅（複数OK）</small></h2>
+    <div class="chips" id="stations"></div>
+  </section>
+
+  <section>
+    <h2>お金と距離</h2>
+    <div class="q"><span>家賃の上限<em>管理費こみ</em></span><div class="chips" id="rentMax"></div></div>
+    <div class="q"><span>少し超えても「おしい」で見せる幅</span><div class="chips" id="rentSlack"></div></div>
+    <div class="q"><span>駅から歩く時間<em>広告の表示（1分＝80m）</em></span><div class="chips" id="walkMax"></div></div>
+    <div class="q"><span>少し遠くても「おしい」で見せる幅</span><div class="chips" id="walkSlack"></div></div>
+    <div class="q"><span>駅との高低差<em>坂道マップの標高で判定</em></span><div class="chips" id="climbMax"></div></div>
+  </section>
+
+  <section>
+    <h2>部屋と建物</h2>
+    <div class="q"><span>広さ</span><div class="chips" id="areaMin"></div></div>
+    <div class="q"><span>少しせまくても「おしい」で見せる幅</span><div class="chips" id="areaSlack"></div></div>
+    <div class="q"><span>間取り<em>複数OK</em></span><div class="chips" id="layouts"></div></div>
+    <div class="q"><span>築年数</span><div class="chips" id="builtWithin"></div></div>
+    <div class="q"><span>何階以上</span><div class="chips" id="floorMin"></div></div>
+  </section>
+
+  <section>
+    <h2>こだわり <small>項目ごとに4段階で選べます</small></h2>
+    <p class="legend"><span><b class="m">必須</b>：ないと条件外</span><span><b class="h">大事</b>：点数を多めに</span><span><b class="n">あれば</b>：少し加点</span><span><b>不要</b>：見ない</span></p>
+    <div id="feats"></div>
+  </section>
+
+  <section>
+    <h2>気になる建物 <small>部屋が出たら一番上に出します</small></h2>
+    <div class="chips" id="watch"></div>
+  </section>
+
+  <section>
+    <h2>ほかに伝えたいこと <small>自由に書いてください</small></h2>
+    <textarea id="memo" placeholder="例：線路沿いは避けたい、ロフトは不要 など"></textarea>
+  </section>
+</div>
+
+<div class="bar"><div class="bar-in">
+  <p class="sum" id="sum"></p>
+  <button type="button" class="btn" id="done">この条件で決定</button>
+</div></div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const man = (v) => `${(v / 10000).toFixed(v % 10000 ? 1 : 0)}万円`;
+
+const OPTIONS = {
+  stations: ['八丁堀', '茅場町', '人形町', '新富町', '宝町', '水天宮前', '築地', '東銀座', '京橋', '小伝馬町', '月島', '門前仲町'],
+  rentMax: [120000, 130000, 140000, 150000, 160000, 170000, 180000].map((v) => [v, man(v)]),
+  rentSlack: [[0, 'なし'], [5000, '+5千円'], [10000, '+1万円'], [20000, '+2万円']],
+  walkMax: [3, 5, 7, 10].map((v) => [v, `${v}分以内`]),
+  walkSlack: [[0, 'なし'], [1, '+1分'], [2, '+2分'], [3, '+3分']],
+  climbMax: [[null, '気にしない'], [2, '2m以内'], [3, '3m以内'], [5, '5m以内']],
+  areaMin: [30, 35, 40, 45, 50].map((v) => [v, `${v}㎡以上`]),
+  areaSlack: [[0, 'なし'], [3, '-3㎡'], [5, '-5㎡']],
+  layouts: ['1LDK', '1SLDK', '2K', '2DK', '2LDK'],
+  builtWithin: [[null, 'こだわらない'], [10, '10年以内'], [20, '20年以内'], [30, '30年以内'], [40, '40年以内']],
+  floorMin: [[null, 'こだわらない'], [2, '2階以上'], [3, '3階以上'], [5, '5階以上']],
+};
+const FEATURES = [
+  ['住まい方', [['balcony', 'ベランダ', '植物を育てる'], ['twoPeople', '2人入居OK'], ['soho', '事務所利用可（SOHO）', '撮影・編集の仕事場'], ['pet', 'ペット可']]],
+  ['日当たり・風', [['sunny', '日当たり良好'], ['south', '南向き'], ['east', '東向き'], ['corner', '角部屋'], ['windows2', '窓が2方向以上', '風通し'], ['riverside', '川沿い・眺望良好', '空が開けた場所']]],
+  ['広さ・駅', [['living12', 'リビング12畳以上', '撮影スペース'], ['area45', '45㎡以上'], ['walk3', '駅まで3分以内']]],
+  ['水まわり', [['bathToilet', 'バス・トイレ別'], ['washstand', '独立洗面台'], ['laundry', '室内洗濯機置場'], ['bathDryer', '浴室乾燥機'], ['stove2', 'コンロ2口以上']]],
+  ['建物', [['elevator', 'エレベーター'], ['autolock', 'オートロック'], ['delivery', '宅配ボックス'], ['bike', '駐輪場'], ['internet', 'ネット無料'], ['rc', '鉄筋コンクリート', '音が響きにくい'], ['notFirst', '1階以外']]],
+];
+const LEVELS = [['must', '必須'], ['high', '大事'], ['nice', 'あれば'], ['off', '不要']];
+const WATCH = ['東急ドエルグラフィオ八丁堀', 'ジュイール東京八丁堀', 'ニューハイツ八丁堀', 'ライオンズマンション八丁堀第2'];
+
+// いままでの会話で決まっている条件（保存されたものがなければこれで始める）
+const START = {
+  stations: ['八丁堀', '茅場町', '人形町', '新富町', '宝町'],
+  rentMax: 150000, rentSlack: 5000, walkMax: 5, walkSlack: 2, climbMax: 3, areaMin: 40, areaSlack: 5,
+  layouts: ['1LDK', '1SLDK', '2DK', '2LDK'], builtWithin: null, floorMin: 3,
+  features: { balcony: 'must', twoPeople: 'must', sunny: 'high', corner: 'high', windows2: 'high', south: 'nice', east: 'nice',
+    living12: 'high', riverside: 'nice', walk3: 'high', area45: 'nice', bathToilet: 'off', washstand: 'off', laundry: 'off',
+    bathDryer: 'off', stove2: 'off', elevator: 'off', autolock: 'off', delivery: 'off', bike: 'off', internet: 'off', rc: 'off',
+    notFirst: 'off', soho: 'off', pet: 'off' },
+  watch: WATCH.slice(), memo: '',
+};
+let state = JSON.parse(JSON.stringify(START));
+let docRef = null, saveTimer = null, dirty = false;
+
+function chipGroup(id, opts, multi) {
+  const el = $(id);
+  el.replaceChildren(...opts.map((o) => {
+    const [v, label] = Array.isArray(o) ? o : [o, o];
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = label;
+    const on = multi ? state[id].includes(v) : state[id] === v;
+    b.setAttribute('aria-pressed', String(on));
+    b.addEventListener('click', () => {
+      if (multi) state[id] = on ? state[id].filter((x) => x !== v) : state[id].concat(v);
+      else state[id] = v;
+      changed();
+    });
+    return b;
+  }));
+}
+
+function renderFeats() {
+  const box = $('feats');
+  box.replaceChildren();
+  for (const [group, items] of FEATURES) {
+    const t = document.createElement('p'); t.className = 'group-title'; t.textContent = group; box.append(t);
+    const list = document.createElement('div'); list.className = 'feats';
+    for (const [key, label, hint] of items) {
+      const row = document.createElement('div'); row.className = 'feat';
+      const name = document.createElement('div'); name.className = 'name'; name.textContent = label;
+      if (hint) { const s = document.createElement('small'); s.textContent = hint; name.append(s); }
+      const seg = document.createElement('div'); seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', label);
+      const cur = state.features[key] || 'off';
+      for (const [v, l] of LEVELS) {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l;
+        b.setAttribute('aria-pressed', String(cur === v));
+        b.addEventListener('click', () => { state.features[key] = v; changed(); });
+        seg.append(b);
+      }
+      row.append(name, seg); list.append(row);
+    }
+    box.append(list);
+  }
+}
+
+function render() {
+  chipGroup('stations', OPTIONS.stations, true);
+  for (const k of ['rentMax', 'rentSlack', 'walkMax', 'walkSlack', 'climbMax', 'areaMin', 'areaSlack', 'builtWithin', 'floorMin']) chipGroup(k, OPTIONS[k], false);
+  chipGroup('layouts', OPTIONS.layouts, true);
+  chipGroup('watch', WATCH, true);
+  renderFeats();
+  if (document.activeElement !== $('memo')) $('memo').value = state.memo || '';
+  const n = (lv) => Object.values(state.features).filter((v) => v === lv).length;
+  $('sum').innerHTML = `${man(state.rentMax)}まで・徒歩${state.walkMax}分・${state.areaMin}㎡〜 ／ 必須 <b>${n('must')}</b>・大事 <b>${n('high')}</b>・あれば <b>${n('nice')}</b>`;
+}
+
+function setStatus(text, ok) { const s = $('status'); s.textContent = text; s.className = ok ? 'status saved' : 'status'; }
+
+function changed() {
+  state.confirmed = false; dirty = true;
+  render();
+  if (!docRef) { setStatus('この画面では保存できません（Claude の画面で開いてください）'); return; }
+  setStatus('保存しています…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 600);
+}
+
+async function save(confirm) {
+  saveTimer = null;
+  if (!docRef) return;
+  try {
+    await docRef.set({ ...state, confirmed: !!confirm, updatedAt: new Date().toISOString() });
+    state.confirmed = !!confirm; if (!saveTimer || confirm) dirty = false;
+    setStatus(confirm ? '決定しました。チャットで「決めた」と伝えてもらえれば、すぐ反映します。' : '保存しました', true);
+  } catch (e) {
+    setStatus('保存できませんでした。少し待ってからもう一度押してください。');
+  }
+}
+
+$('memo').addEventListener('input', () => { state.memo = $('memo').value; changed(); });
+$('done').addEventListener('click', () => { clearTimeout(saveTimer); save(true); });
+
+render();
+(async () => {
+  const timer = setTimeout(() => setStatus('保存先につながりませんでした。選んだ内容はこの画面にだけ残ります。'), 10000);
+  const db = await window.claude?.use?.('db');
+  if (!db) { clearTimeout(timer); setStatus('この画面では保存できません（Claude の画面で開いてください）'); return; }
+  docRef = db.doc('criteria/current');
+  docRef.onSnapshot((snap) => {
+    clearTimeout(timer);
+    if (dirty) return;
+    if (snap.exists && !snap.metadata.hasPendingWrites) {
+      const d = snap.data();
+      state = { ...JSON.parse(JSON.stringify(START)), ...d, features: { ...START.features, ...(d.features || {}) } };
+      render();
+      setStatus(d.confirmed ? '決定済みの条件です。変えたいところを押してください。' : `保存済み（${new Date(d.updatedAt).toLocaleString('ja-JP')}）`, true);
+    } else if (!snap.exists) {
+      setStatus('いまの条件（これまでの会話から）を表示しています。押すと保存されます。');
+    }
+  }, () => { clearTimeout(timer); setStatus('保存先につながりませんでした。'); });
+})();
+</script>

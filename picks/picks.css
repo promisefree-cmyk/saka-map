@@ -48,7 +48,7 @@
 .checks .fail::before { content: "× "; color: var(--g3); font-weight: 700; }
 .checks .unknown { color: var(--muted); border-style: dashed; }
 .checks .unknown::before { content: "? "; }
-.checks.must li { font-weight: 700; }
+.checks.must li, .checks .high { font-weight: 700; }
 .card .note { margin: 0; font-size: .8rem; color: var(--muted); }
 
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }

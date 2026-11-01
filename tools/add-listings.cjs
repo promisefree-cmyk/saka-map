@@ -15,7 +15,7 @@ const criteria = JSON.parse(fs.readFileSync(path.join(root, 'picks', 'criteria.j
 
 const FIELDS = ['source', 'url', 'title', 'room', 'address', 'station', 'walkMin', 'rent', 'fee', 'deposit', 'keyMoney',
   'layout', 'areaM2', 'livingJo', 'floor', 'floors', 'builtYear', 'direction', 'corner', 'balcony', 'windows2',
-  'sunny', 'riverside', 'twoPeople', 'notes', 'mailDate', 'mailUrl'];
+  'sunny', 'riverside', 'twoPeople', 'features', 'notes', 'mailDate', 'mailUrl'];
 const NUMS = ['walkMin', 'rent', 'fee', 'deposit', 'keyMoney', 'areaM2', 'livingJo', 'floor', 'floors', 'builtYear'];
 const BOOLS = ['corner', 'balcony', 'windows2', 'sunny', 'riverside', 'twoPeople'];
 
@@ -26,6 +26,7 @@ function clean(raw) {
     if (v === undefined || v === '') v = null;
     if (v !== null && NUMS.includes(k)) { v = Number(String(v).replace(/[^\d.]/g, '')); if (!Number.isFinite(v)) v = null; }
     if (v !== null && BOOLS.includes(k)) v = v === true || v === 'true' || v === 'あり' || v === 'はい';
+    if (v !== null && k === 'features') v = (Array.isArray(v) ? v : String(v).split(/[、,／/]/)).map((x) => String(x).trim()).filter(Boolean);
     o[k] = v;
   }
   if (o.rent !== null && o.rent < 1000) o.rent = Math.round(o.rent * 10000); // 「14.5」万円の書き方を円に直す
